@@ -1,0 +1,15 @@
+{
+  "name": "huttradio-letsencrypt",
+  "version": "0.1.0",
+  "author": "huttradio",
+  "summary": "Puppet module for generating and installing Let's Encrypt certificates",
+  "license": "Apache-2.0",
+  "source": "https://github.com/huttradio/puppet-letsencrypt",
+  "project_page": "https://github.com/huttradio/puppet-letsencrypt",
+  "issues_url": "https://github.com/huttradio/puppet-letsencrypt/issues",
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 1.0.0"}
+  ],
+  "data_provider": null
+}
+
