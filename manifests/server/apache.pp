@@ -1,4 +1,4 @@
-# Class: letsencrypt
+# Class: letsencrypt::server::apache
 # ===========================
 #
 # Full description of class letsencrypt here.
@@ -35,14 +35,33 @@
 # Authors
 # -------
 #
-# Author Name <author@domain.com>
+# Callum Dickinson <callum@huttradio.co.nz>
 #
 # Copyright
 # ---------
 #
-# Copyright 2016 Your name here, unless otherwise noted.
+# Copyright 2016 Hutt Community Radio and Audio Archives Charitable Trust.
 #
-class letsencrypt {
+class letsencrypt::server::apache
+(
+  $ensure            = 'present',
 
+  $package = $::letsencrypt::params::apache_package,
+) inherits letsencrypt::params
+{
+  validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
 
+  if ($ensure == 'present')
+  {
+    $package_ensure = 'installed'
+  }
+  else
+  {
+    $package_ensure = $ensure
+  }
+
+  package
+  { $package:
+    ensure => $package_ensure,
+  }
 }
