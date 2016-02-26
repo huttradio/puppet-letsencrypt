@@ -44,8 +44,6 @@
 #
 class letsencrypt::server
 (
-  $email,
-
   $ensure = 'present',
 
   $package_manage        = true,
