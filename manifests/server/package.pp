@@ -44,37 +44,50 @@
 #
 class letsencrypt::server::package
 (
-  $ensure            = 'present',
-  $assert_base_class = true,
+  $ensure = 'present',
 
-  $source = $::letsencrypt::params::package_source,
+  $letsencrypt_dir       = $::letsencrypt::params::letsencrypt_dir,
+  $letsencrypt_dir_owner = $::letsencrypt::params::letsencrypt_dir_owner,
+  $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
 
-  $repo_path     = $::letsencrypt::params::package_repo_path,
-  $repo_provider = $::letsencrypt::params::package_repo_provider,
-  $repo_source   = $::letsencrypt::params::package_repo_source,
-  $repo_revision = $::letsencrypt::params::package_repo_revision,
+  $letsencrypt_sh        = $::letsencrypt::params::letsencrypt_sh,
+  $letsencrypt_sh_source = $::letsencrypt::params::letsencrypt_sh_source,
+  $letsencrypt_sh_owner  = $::letsencrypt::params::letsencrypt_sh_owner,
+  $letsencrypt_sh_group  = $::letsencrypt::params::letsencrypt_sh_group,
+  $letsencrypt_sh_mode   = $::letsencrypt::params::letsencrypt_sh_mode,
+
+  $repo_provider  = $::letsencrypt::params::package_repo_provider,
+  $repo_source    = $::letsencrypt::params::package_repo_source,
+  $repo_revision  = $::letsencrypt::params::package_repo_revision,
 ) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
-  validate_re($source, ['^package$', '^vcsrepo$'], 'source can only be one of package or vcsrepo')
 
-  if ($source == 'package')
+  if ($ensure == 'present' or $ensure == 'latest')
   {
-    validate_re($package, '^[^[[:space:]]][^[[:space:]]]*$', 'package does not appear to be a valid package name')
-
-    package
-    { $package:
-      ensure => $ensure,
-    }
+    $file_ensure = 'file'
   }
-  elsif ($source == 'vcsrepo')
+  else
   {
-    vcsrepo
-    { $repo_path:
-      ensure   => $ensure,
-      provider => $repo_provider,
-      source   => $repo_source,
-      revision => $repo_revision,
-    }
+    $file_ensure = $ensure
+  }
+
+  vcsrepo
+  { $letsencrypt_dir:
+    ensure   => $ensure,
+    provider => $repo_provider,
+    source   => $repo_source,
+    revision => $repo_revision,
+    owner    => $letsencrypt_dir_owner,
+    group    => $letsencrypt_dir_group,
+  }
+
+  file
+  { $letsencrypt_sh:
+    ensure => $file_ensure,
+    source => $letsencrypt_sh_source,
+    owner  => $letsencrypt_sh_owner,
+    group  => $letsencrypt_sh_group,
+    mode   => $letsencrypt_sh_mode,
   }
 }

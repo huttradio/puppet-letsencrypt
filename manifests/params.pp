@@ -44,65 +44,57 @@
 #
 class letsencrypt::params
 {
-  # Fail on non-Debian distros. These should be supported in future, as Let's Encrypt's Apache
-  # plugin matures.
-  if ($::osfamily != 'Debian')
-  {
-    fail('only supported OS family is Debian')
-  }
-
   # Package configuration options.
-  $package_repo_path     = '/opt/letsencrypt'
   $package_repo_provider = 'git'
-  $package_repo_source   = 'https://github.com/letsencrypt/letsencrypt.git'
-  $package_repo_revision = 'v0.4.0'
-
-  if ($::operatingsystem == 'Debian' and versioncmp($::operatingsystemrelease, '9') >= 0)
-  {
-    $package_source  = 'package'
-    $package_package = 'letsencrypt'
-  }
-  elsif ($::operatingsystem == 'Ubuntu' and versioncmp($::operatingsystemrelease, '16.04') >= 0)
-  {
-    $package_source  = 'package'
-    $package_package = 'letsencrypt'
-  }
-  else
-  {
-    $package_source = 'vcsrepo'
-  }
+  $package_repo_source   = 'https://github.com/lukas2511/letsencrypt.sh.git'
+  $package_repo_revision = 'master'
 
   # Apache configuration options.
-  if ($::osfamily == 'Debian')
+  $apache_vhost      = $::fqdn
+  $apache_vhost_ip   = '*'
+  $apache_vhost_port = '80'
+
+  if ($::osfamily == 'RedHat' or $::operatingsystem =~ /^[Aa]mazon$/)
   {
-    $apache_package = 'apache2'
+    $apache_group = 'apache'
+  }
+  elsif ($::osfamily == 'Debian')
+  {
+    $apache_group = 'www-data'
+  }
+  elsif ($::osfamily == 'FreeBSD')
+  {
+    $apache_group = 'www'
+  }
+  elsif ($::osfamily == 'Gentoo')
+  {
+    $apache_group = 'apache'
+  }
+  elsif ($::osfamily == 'Suse')
+  {
+    $apache_group = 'wwwrun'
   }
 
   # Cron configuration options.
   $cron_user = 'root'
 
   # Let's Encrypt configuration options.
-  if ($::operatingsystem == 'Debian' and versioncmp($::operatingsystemrelease, '9') >= 0)
-  {
-    $letsencrypt         = 'letsencrypt'
-    $letsencrypt_dir     = '/usr/bin'
-  }
-  elsif ($::operatingsystem == 'Ubuntu' and versioncmp($::operatingsystemrelease, '16.04') >= 0)
-  {
-    $letsencrypt         = 'letsencrypt'
-    $letsencrypt_dir     = '/usr/bin'
-  }
-  else
-  {
-    $letsencrypt         = 'letsencrypt-auto'
-    $letsencrypt_dir     = '/opt/letsencrypt'
-  }
+  $letsencrypt_dir       = '/opt/letsencrypt'
+  $letsencrypt_dir_owner = 'puppet'
+  $letsencrypt_dir_group = $apache_group
+  $letsencrypt_dir_mode  = '0750'
+
+  $letsencrypt_sh        = 'letsencrypt-sh'
+  $letsencrypt_sh_source = 'puppet:///modules/letsencrypt/letsencrypt-sh'
+  $letsencrypt_sh_owner  = 'root'
+  $letsencrypt_sh_group  = 'root'
+  $letsencrypt_sh_mode   = '0555'
 
   $letsencrypt_cert_dir_base  = '/etc/letsencrypt/live'
-  $letsencrypt_cert       = 'cert.pem'
-  $letsencrypt_chain     = 'chain.pem'
-  $letsencrypt_fullchain = 'fullchain.pem'
-  $letsencrypt_privkey   = 'privkey.pem'
+  $letsencrypt_cert           = 'cert.pem'
+  $letsencrypt_chain          = 'chain.pem'
+  $letsencrypt_fullchain      = 'fullchain.pem'
+  $letsencrypt_privkey        = 'privkey.pem'
 
   $letsencrypt_cert_dir_owner = 'root'
   $letsencrypt_cert_dir_group = 'root'

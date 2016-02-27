@@ -50,7 +50,7 @@ define letsencrypt::cert
 
   $servername = $name,
 
-  $letsencrypt         = undef,
+  $letsencrypt_sh      = undef,
   $letsencrypt_dir     = undef,
   $letsencrypt_command = undef,
 
@@ -96,9 +96,9 @@ define letsencrypt::cert
 {
   require ::letsencrypt::params
 
-  $_letsencrypt         = pick($letsencrypt, $::letsencrypt::params::letsencrypt)
+  $_letsencrypt_sh      = pick($letsencrypt_sh, $::letsencrypt::params::letsencrypt_sh)
   $_letsencrypt_dir     = pick($letsencrypt_dir, $::letsencrypt::params::letsencrypt_dir)
-  $_letsencrypt_command = pick($command, "${_letsencrypt_dir}/${_letsencrypt} --agree-tos --email ${email} --apache -d ${servername}")
+  $_letsencrypt_command = pick($letsencrypt_command, "${_letsencrypt_dir}/${_letsencrypt_sh} ${email} ${servername}")
 
   $_cert_dir_base  = pick($cert_dir_base, $::letsencrypt::params::letsencrypt_cert_dir_base)
   $_cert_dir       = pick($cert_dir, "${_cert_dir_base}/${servername}")
@@ -127,7 +127,7 @@ define letsencrypt::cert
   $_cert_dir_server       = pick($cert_dir_server, "${_cert_dir_base_server}/${servername}")
   $_cert_server           = pick($cert_server, $::letsencrypt::params::letsencrypt_cert)
   $_chain_server          = pick($chain_server, $::letsencrypt::params::letsencrypt_chain)
-  $_fullchain_server      = pick($fullchain_server $::letsencrypt::params::letsencrypt_fullchain)
+  $_fullchain_server      = pick($fullchain_server, $::letsencrypt::params::letsencrypt_fullchain)
   $_privkey_server        = pick($privkey_server, $::letsencrypt::params::letsencrypt_privkey)
   $_cert_path_server      = pick($cert_path_server, "${_cert_dir_server}/${_cert_server}")
   $_chain_path_server     = pick($chain_path_server, "${_cert_dir_server}/${_chain_server}")
@@ -154,61 +154,65 @@ define letsencrypt::cert
 
   unless (file_exists($_cert_path_server) and file_exists($_chain_path_server) and file_exists($_fullchain_path_server) and file_exists($_privkey_path_server))
   {
-    generate($_letsencrypt_command)
+    $letsencrypt_command_output = generate_unsafe($_letsencrypt_command)
   }
 
-  if ($manage_cert_dir)
+  # Establish a dependency on the Let's Encrypt command.
+  if ($letsencrypt_command_output)
   {
-    file
-    { $_cert_dir:
-      ensure  => $directory_ensure,
-      owner   => $_cert_dir_owner,
-      group   => $_cert_dir_group,
-      mode    => $_cert_dir_mode,
+    if ($manage_cert_dir)
+    {
+      file
+      { $_cert_dir:
+        ensure  => $directory_ensure,
+        owner   => $_cert_dir_owner,
+        group   => $_cert_dir_group,
+        mode    => $_cert_dir_mode,
+      }
     }
-  }
 
-  file
-  { $_cert_path:
-    ensure  => $file_ensure,
-    content => file($_cert_path_server),
-    owner   => $_cert_owner,
-    group   => $_cert_group,
-    mode    => $_cert_mode,
-  }
+    file
+    { $_cert_path:
+      ensure  => $file_ensure,
+      content => file($_cert_path_server),
+      owner   => $_cert_owner,
+      group   => $_cert_group,
+      mode    => $_cert_mode,
+    }
 
-  file
-  { $_chain_path:
-    ensure  => $file_ensure,
-    content => file($_chain_path_server),
-    owner   => $_cert_owner,
-    group   => $_cert_group,
-    mode    => $_cert_mode,
-  }
+    file
+    { $_chain_path:
+      ensure  => $file_ensure,
+      content => file($_chain_path_server),
+      owner   => $_cert_owner,
+      group   => $_cert_group,
+      mode    => $_cert_mode,
+    }
 
-  file
-  { $_fullchain_path:
-    ensure  => $file_ensure,
-    content => file($_fullchain_path_server),
-    owner   => $_cert_owner,
-    group   => $_cert_group,
-    mode    => $_cert_mode,
-  }
+    file
+    { $_fullchain_path:
+      ensure  => $file_ensure,
+      content => file($_fullchain_path_server),
+      owner   => $_cert_owner,
+      group   => $_cert_group,
+      mode    => $_cert_mode,
+    }
 
-  file
-  { $_privkey_path:
-    ensure    => $file_ensure,
-    content   => file($_privkey_path_server),
-    show_diff => false,
-    owner     => $_privkey_owner,
-    group     => $_privkey_group,
-    mode      => $_privkey_mode,
-  }
+    file
+    { $_privkey_path:
+      ensure    => $file_ensure,
+      content   => file($_privkey_path_server),
+      show_diff => false,
+      owner     => $_privkey_owner,
+      group     => $_privkey_group,
+      mode      => $_privkey_mode,
+    }
 
-  @@::letsencrypt::cert::server
-  { $name:
-    cron_manage  => $cron_manage,
-    cron_command => $_cron_command,
-    cron_user    => $_cron_user,
+    @@::letsencrypt::cert::server
+    { $name:
+      cron_manage  => $cron_manage,
+      cron_command => $_cron_command,
+      cron_user    => $_cron_user,
+    }
   }
 }

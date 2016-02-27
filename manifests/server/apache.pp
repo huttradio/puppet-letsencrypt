@@ -44,24 +44,32 @@
 #
 class letsencrypt::server::apache
 (
-  $ensure            = 'present',
+  $ensure = 'present',
 
-  $package = $::letsencrypt::params::apache_package,
-) inherits letsencrypt::params
+  $apache_vhost      = $::letsencrypt::params::apache_vhost,
+  $apache_vhost_ip   = $::letsencrypt::params::apache_vhost_ip,
+  $apache_vhost_port = $::letsencrypt::params::apache_vhost_port,
+
+  $letsencrypt_dir = $::letsencrypt::params::letsencrypt_dir,
+) include letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
 
-  if ($ensure == 'present')
+  if ($ensure == 'present' or $ensure == 'latest')
   {
-    $package_ensure = 'installed'
-  }
-  else
-  {
-    $package_ensure = $ensure
-  }
+    class
+    { '::apache':
+      default_vhost => false,
+    }
 
-  package
-  { $package:
-    ensure => $package_ensure,
+    ::apache::vhost
+    { $apache_vhost:
+      ip            => $apache_vhost_ip,
+      port          => $apache_vhost_port,
+      docroot       => $letsencrypt_dir,
+      docroot_owner => $letsencrypt_dir_owner,
+      docroot_group => $letsencrypt_dir_group,
+      docroot_mode  => $letsencrypt_dir_mode,
+    }
   }
 }

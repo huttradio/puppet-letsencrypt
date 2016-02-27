@@ -54,14 +54,13 @@ class letsencrypt::server
   $package_repo_source   = $::letsencrypt::params::package_repo_source,
   $package_repo_revision = $::letsencrypt::params::package_repo_revision,
 
-  $apache_manage  = true,
-  $apache_package = $::letsencrypt::params::apache_package,
+  $apache_manage = true,
 
   $exported_certs_manage = true,
 ) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
-  validate_bool($package_manage, $apache_manage, $cron_manage, $exported_certs_manage)
+  validate_bool($package_manage, $apache_manage, $exported_certs_manage)
 
   if ($package_manage)
   {
@@ -70,7 +69,6 @@ class letsencrypt::server
         ensure        => $ensure,
         source        => $package_source,
         package       => $package_package,
-        epel          => $package_epel,
         repo_path     => $package_repo_path,
         repo_provider => $package_repo_provider,
         repo_source   => $package_repo_source,
@@ -83,7 +81,6 @@ class letsencrypt::server
     class
     { '::letsencrypt::server::apache':
       ensure  => $ensure,
-      package => $apache_package,
     }
   }
 
