@@ -1,4 +1,4 @@
-# Class: letsencrypt::package
+# Class: letsencrypt::directories
 # ===========================
 #
 # Full description of class letsencrypt here.
@@ -42,7 +42,7 @@
 #
 # Copyright 2016 Hutt Community Radio and Audio Archives Charitable Trust.
 #
-class letsencrypt::package
+class letsencrypt::directories
 (
   $ensure = 'present',
 
@@ -64,7 +64,7 @@ class letsencrypt::package
   }
 
   file
-  { $letsencrypt_dir:
+  { $letsencrypt_dir_base:
     ensure => $directory_ensure,
     owner  => $letsencrypt_dir_owner,
     group  => $letsencrypt_dir_group,

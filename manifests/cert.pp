@@ -60,12 +60,12 @@ define letsencrypt::cert
   $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
   $letsencrypt_dir_mode  = $::letsencrypt::params::letsencrypt_dir_mode,
 
-  $letsencrypt_sh         = $::letsencrypt::params::letsencrypt_sh),
-  $letsencrypt_sh_dir     = $::letsencrypt::params::letsencrypt_sh_dir),
+  $letsencrypt_sh         = $::letsencrypt::params::letsencrypt_sh,
+  $letsencrypt_sh_dir     = $::letsencrypt::params::letsencrypt_sh_dir,
   $letsencrypt_sh_command = undef,
 
   $cert           = $::letsencrypt::params::letsencrypt_cert,
-  $chain          = $::letsencrypt::params::letsencrypt_privkey,
+  $chain          = $::letsencrypt::params::letsencrypt_chain,
   $fullchain      = $::letsencrypt::params::letsencrypt_fullchain,
   $privkey        = $::letsencrypt::params::letsencrypt_privkey,
 
@@ -113,7 +113,7 @@ define letsencrypt::cert
 
   exec
   { "::letsencrypt::cert::${servername}":
-    command => $_letsencrypt_command,
+    command => $_letsencrypt_sh_command,
     creates => [ $_cert_path, $_chain_path, $_fullchain_path, $_privkey_path ],
   }
 
