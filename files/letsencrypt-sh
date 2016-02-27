@@ -1,13 +1,12 @@
 #!/bin/sh
 
 dir="$(dirname $0)"
-config="$dir/config.sh"
+config="${dir}/config.sh"
 letsconfig_sh="${dir}/letsencrypt.sh"
 
-email="${1}"
-domain="${2}"
-
-basedir="${dir}/certs"
+basedir="{1}"
+email="${2}"
+domain="${3}"
 
 cat > ${config} << EOF
 CHALLENGETYPE="http-01"

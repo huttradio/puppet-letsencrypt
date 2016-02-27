@@ -1,4 +1,4 @@
-# Class: letsencrypt::server::package
+# Class: letsencrypt::package
 # ===========================
 #
 # Full description of class letsencrypt here.
@@ -42,15 +42,12 @@
 #
 # Copyright 2016 Hutt Community Radio and Audio Archives Charitable Trust.
 #
-class letsencrypt::server::package
+class letsencrypt::package
 (
   $ensure = 'present',
 
-  $letsencrypt_dir       = $::letsencrypt::params::letsencrypt_dir,
-  $letsencrypt_dir_owner = $::letsencrypt::params::letsencrypt_dir_owner,
-  $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
-
   $letsencrypt_sh        = $::letsencrypt::params::letsencrypt_sh,
+  $letsencrypt_sh_dir    = $::letsencrypt::params::letsencrypt_sh_dir,
   $letsencrypt_sh_source = $::letsencrypt::params::letsencrypt_sh_source,
   $letsencrypt_sh_owner  = $::letsencrypt::params::letsencrypt_sh_owner,
   $letsencrypt_sh_group  = $::letsencrypt::params::letsencrypt_sh_group,
@@ -73,17 +70,17 @@ class letsencrypt::server::package
   }
 
   vcsrepo
-  { $letsencrypt_dir:
+  { $letsencrypt_sh_dir:
     ensure   => $ensure,
     provider => $repo_provider,
     source   => $repo_source,
     revision => $repo_revision,
-    owner    => $letsencrypt_dir_owner,
-    group    => $letsencrypt_dir_group,
+    owner    => $letsencrypt_sh_owner,
+    group    => $letsencrypt_sh_group,
   }
 
   file
-  { $letsencrypt_sh:
+  { "${letsencrypt_sh_dir}/${letsencrypt_sh}":
     ensure => $file_ensure,
     source => $letsencrypt_sh_source,
     owner  => $letsencrypt_sh_owner,

@@ -49,11 +49,11 @@ class letsencrypt::params
   $package_repo_source   = 'https://github.com/lukas2511/letsencrypt.sh.git'
   $package_repo_revision = 'master'
 
-  # Apache configuration options.
-  $apache_vhost      = $::fqdn
-  $apache_vhost_ip   = '*'
-  $apache_vhost_port = '80'
+  # Virtual host configuration options.
+  $vhost      = $::fqdn
+  $vhost_port = '8133'
 
+  # Apache configuration options.
   if ($::osfamily == 'RedHat' or $::operatingsystem =~ /^[Aa]mazon$/)
   {
     $apache_group = 'apache'
@@ -79,18 +79,18 @@ class letsencrypt::params
   $cron_user = 'root'
 
   # Let's Encrypt configuration options.
-  $letsencrypt_dir       = '/opt/letsencrypt'
-  $letsencrypt_dir_owner = 'puppet'
+  $letsencrypt_dir_base  = '/etc/letsencrypt'
+  $letsencrypt_dir_owner = 'root'
   $letsencrypt_dir_group = $apache_group
-  $letsencrypt_dir_mode  = '0750'
+  $letsencrypt_dir_mode  = '0550'
 
   $letsencrypt_sh        = 'letsencrypt-sh'
+  $letsencrypt_sh_dir    = '/opt/letsencrypt'
   $letsencrypt_sh_source = 'puppet:///modules/letsencrypt/letsencrypt-sh'
   $letsencrypt_sh_owner  = 'root'
   $letsencrypt_sh_group  = 'root'
   $letsencrypt_sh_mode   = '0555'
 
-  $letsencrypt_cert_dir_base  = '/etc/letsencrypt/live'
   $letsencrypt_cert           = 'cert.pem'
   $letsencrypt_chain          = 'chain.pem'
   $letsencrypt_fullchain      = 'fullchain.pem'
@@ -98,13 +98,13 @@ class letsencrypt::params
 
   $letsencrypt_cert_dir_owner = 'root'
   $letsencrypt_cert_dir_group = 'root'
-  $letsencrypt_cert_dir_mode  = '500'
+  $letsencrypt_cert_dir_mode  = '0500'
 
   $letsencrypt_cert_owner = 'root'
   $letsencrypt_cert_group = 'root'
-  $letsencrypt_cert_mode  = '444'
+  $letsencrypt_cert_mode  = '0444'
 
   $letsencrypt_privkey_owner = 'root'
   $letsencrypt_privkey_group = 'root'
-  $letsencrypt_privkey_mode  = '400'
+  $letsencrypt_privkey_mode  = '0400'
 }

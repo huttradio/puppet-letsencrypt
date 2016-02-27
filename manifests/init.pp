@@ -1,4 +1,4 @@
-# Class: letsencrypt::server
+# Class: letsencrypt
 # ===========================
 #
 # Full description of class letsencrypt here.
@@ -42,50 +42,73 @@
 #
 # Copyright 2016 Hutt Community Radio and Audio Archives Charitable Trust.
 #
-class letsencrypt::server
+class letsencrypt
 (
   $ensure = 'present',
 
-  $package_manage        = true,
-  $package_source        = $::letsencrypt::params::package_source,
-  $package_package       = $::letsencrypt::params::package_package,
-  $package_repo_path     = $::letsencrypt::params::package_repo_path,
-  $package_repo_provider = $::letsencrypt::params::package_repo_provider,
-  $package_repo_source   = $::letsencrypt::params::package_repo_source,
-  $package_repo_revision = $::letsencrypt::params::package_repo_revision,
+  $package_manage      = true,
+  $directories_manage  = true,
+  $apache_manage       = true,
+  $apache_class_manage = true,
+  $apache_vhost_manage = true,
 
-  $apache_manage = true,
+  $email   = undef,
+  $domains = undef,
 
-  $exported_certs_manage = true,
+  $vhost      = $::letsencrypt::params::vhost,
+  $vhost_port = $::letsencrypt::params::vhost_port,
 ) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
-  validate_bool($package_manage, $apache_manage, $exported_certs_manage)
+  validate_bool($package_manage, $directories_manage, $apache_manage, $apache_class_manage, $apache_vhost_manage)
 
   if ($package_manage)
   {
     class
-    { '::letsencrypt::server::package':
-        ensure        => $ensure,
-        source        => $package_source,
-        package       => $package_package,
-        repo_path     => $package_repo_path,
-        repo_provider => $package_repo_provider,
-        repo_source   => $package_repo_source,
-        repo_revision => $package_repo_revision,
+    { '::letsencrypt::package':
+        ensure => $ensure,
+    }
+  }
+
+  if ($directories_manage)
+  {
+    class
+    { '::letsencrypt::directories':
+        ensure => $ensure,
     }
   }
 
   if ($apache_manage)
   {
     class
-    { '::letsencrypt::server::apache':
-      ensure  => $ensure,
+    { '::letsencrypt::apache':
+      ensure             => $ensure,
+      class_manage       => $apache_class_manage,
+      vhost_manage       => $apache_vhost_manage,
+
+      vhost              => $vhost,
+      vhost_port         => $vhost_port,
+
+      directories_manage => $directories_manage,
     }
+
+
   }
 
-  if ($exported_certs_manage)
+  if ($domains != undef)
   {
-    ::Letsencrypt::Cert::Server <<| |>>
+    if (!is_string($domains) and !is_array($domains))
+    {
+      fail("if defined, domains should be either a String or Array of Strings")
+    }
+
+    ::letsencrypt::cert
+    { $domains:
+      email              => $email,
+
+      package_manage     => $package_manage,
+      directories_manage => $directories_manage,
+      apache_manage      => $apache_manage,
+    }
   }
 }

@@ -1,4 +1,4 @@
-# Class: letsencrypt::server::apache
+# Class: letsencrypt::package
 # ===========================
 #
 # Full description of class letsencrypt here.
@@ -42,34 +42,32 @@
 #
 # Copyright 2016 Hutt Community Radio and Audio Archives Charitable Trust.
 #
-class letsencrypt::server::apache
+class letsencrypt::package
 (
   $ensure = 'present',
 
-  $apache_vhost      = $::letsencrypt::params::apache_vhost,
-  $apache_vhost_ip   = $::letsencrypt::params::apache_vhost_ip,
-  $apache_vhost_port = $::letsencrypt::params::apache_vhost_port,
-
-  $letsencrypt_dir = $::letsencrypt::params::letsencrypt_dir,
-) include letsencrypt::params
+  $letsencrypt_dir_base  = $::letsencrypt::params::letsencrypt_dir_base,
+  $letsencrypt_dir_owner = $::letsencrypt::params::letsencrypt_dir_owner,
+  $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
+  $letsencrypt_dir_mode  = $::letsencrypt::params::letsencrypt_dir_mode,
+) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
 
   if ($ensure == 'present' or $ensure == 'latest')
   {
-    class
-    { '::apache':
-      default_vhost => false,
-    }
+    $directory_ensure = 'directory'
+  }
+  else
+  {
+    $directory_ensure = $ensure
+  }
 
-    ::apache::vhost
-    { $apache_vhost:
-      ip            => $apache_vhost_ip,
-      port          => $apache_vhost_port,
-      docroot       => $letsencrypt_dir,
-      docroot_owner => $letsencrypt_dir_owner,
-      docroot_group => $letsencrypt_dir_group,
-      docroot_mode  => $letsencrypt_dir_mode,
-    }
+  file
+  { $letsencrypt_dir:
+    ensure => $directory_ensure,
+    owner  => $letsencrypt_dir_owner,
+    group  => $letsencrypt_dir_group,
+    mode   => $letsencrypt_dir_mode,
   }
 }
