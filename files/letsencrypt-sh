@@ -4,14 +4,15 @@ dir="$(dirname $0)"
 config="${dir}/config.sh"
 letsconfig_sh="${dir}/letsencrypt.sh"
 
-basedir="{1}"
+basedir="${1}"
 email="${2}"
 domain="${3}"
+csr_path="${4}"
 
-cat > ${config} << EOF
+cat > "${config}" << EOF
 CHALLENGETYPE="http-01"
 BASEDIR="${basedir}"
 CONTACT_EMAIL="${email}"
 EOF
 
-exec "${letsconfig_sh}" --config "${config}" --domain "${domain}"
+exec "${letsconfig_sh}" --config "${config}" --domain "${domain}" --signcsr "${csr_path}"

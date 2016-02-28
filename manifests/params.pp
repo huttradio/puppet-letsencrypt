@@ -91,14 +91,25 @@ class letsencrypt::params
   $letsencrypt_sh_group  = 'root'
   $letsencrypt_sh_mode   = '0555'
 
-  $letsencrypt_cert           = 'cert.pem'
-  $letsencrypt_chain          = 'chain.pem'
-  $letsencrypt_fullchain      = 'fullchain.pem'
-  $letsencrypt_privkey        = 'privkey.pem'
+  $letsencrypt_cert_cnf  = 'cert.cnf'
+  $letsencrypt_csr       = 'cert.csr'
+  $letsencrypt_cert      = 'cert.pem'
+  $letsencrypt_chain     = 'chain.pem'
+  $letsencrypt_fullchain = 'fullchain.pem'
+  $letsencrypt_privkey   = 'privkey.pem'
+
+  $letsencrypt_cert_cnf_source = 'puppet:///modules/letsencrypt/cert.cnf.erb'
+  $letsencrypt_cert_cnf_owner  = 'root'
+  $letsencrypt_cert_cnf_group  = 'root'
+  $letsencrypt_cert_cnf_mode   = '0444'
+
+  $letsencrypt_csr_dir_owner = 'root'
+  $letsencrypt_csr_dir_group = 'root'
+  $letsencrypt_csr_dir_mode  = '0555'
 
   $letsencrypt_cert_dir_owner = 'root'
   $letsencrypt_cert_dir_group = 'root'
-  $letsencrypt_cert_dir_mode  = '0500'
+  $letsencrypt_cert_dir_mode  = '0555'
 
   $letsencrypt_cert_owner = 'root'
   $letsencrypt_cert_group = 'root'

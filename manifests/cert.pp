@@ -64,37 +64,44 @@ define letsencrypt::cert
   $letsencrypt_sh_dir     = $::letsencrypt::params::letsencrypt_sh_dir,
   $letsencrypt_sh_command = undef,
 
+  $csr            = $::letsencrypt::params::letsencrypt_csr,
   $cert           = $::letsencrypt::params::letsencrypt_cert,
   $chain          = $::letsencrypt::params::letsencrypt_chain,
   $fullchain      = $::letsencrypt::params::letsencrypt_fullchain,
   $privkey        = $::letsencrypt::params::letsencrypt_privkey,
 
+  $csr_path       = undef,
   $cert_path      = undef,
   $chain_path     = undef,
   $fullchain_path = undef,
   $privkey_path   = undef,
 
-  $cert_owner  = $::letsncrypt::params::letsncrypt_cert_owner,
-  $cert_group  = $::letsncrypt::params::letsncrypt_cert_group,
-  $cert_mode   = $::letsncrypt::params::letsncrypt_cert_mode,
+  $csr_owner  = $::letsencrypt::params::letsencrypt_csr_owner,
+  $csr_group  = $::letsencrypt::params::letsencrypt_csr_group,
+  $csr_mode   = $::letsencrypt::params::letsencrypt_csr_mode,
 
-  $privkey_owner  = $::letsncrypt::params::letsncrypt_privkey_owner,
-  $privkey_group  = $::letsncrypt::params::letsncrypt_privkey_group,
-  $privkey_mode   = $::letsncrypt::params::letsncrypt_privkey_mode,
+  $cert_owner  = $::letsencrypt::params::letsencrypt_cert_owner,
+  $cert_group  = $::letsencrypt::params::letsencrypt_cert_group,
+  $cert_mode   = $::letsencrypt::params::letsencrypt_cert_mode,
+
+  $privkey_owner  = $::letsencrypt::params::letsencrypt_privkey_owner,
+  $privkey_group  = $::letsencrypt::params::letsencrypt_privkey_group,
+  $privkey_mode   = $::letsencrypt::params::letsencrypt_privkey_mode,
 
   $cron_manage  = true,
   $cron_command = undef,
   $cron_user    = undef,
 )
 {
-  $_letsencrypt_sh_command = pick($letsencrypt_sh_command, "${letsencrypt_sh_dir}/${letsencrypt_sh} ${letsencrypt_dir} ${email} ${servername}")
-
   $_letsencrypt_dir = pick($letsencrypt_dir, "${letsencrypt_dir_base}/certs/${servername}")
 
+  $_csr_path       = pick($csr_path, "${_letsencrypt_dir}/${csr}")
   $_cert_path      = pick($cert_path, "${_letsencrypt_dir}/${cert}")
   $_chain_path     = pick($chain_path, "${_letsencrypt_dir}/${chain}")
   $_fullchain_path = pick($fullchain_path, "${_letsencrypt_dir}/${fullchain}")
   $_privkey_path   = pick($privkey_path, "${_letsencrypt_dir}/${privkey}")
+
+  $_letsencrypt_sh_command = pick($letsencrypt_sh_command, "${letsencrypt_sh_dir}/${letsencrypt_sh} ${_letsencrypt_dir} ${email} ${servername} ${csr_path}")
 
   validate_re($ensure, ['^present$', '^absent$'], 'ensure can only be one of present or absent')
   validate_re($email, '^[A-Za-z0-9][A-Za-z0-9_\.]*[A-Za-z0-9]@[A-Za-z0-9][0-9A-Za-z\-]*[A-Za-z0-9]\.[A-Za-z0-9][0-9A-Za-z\-\.]*[A-Za-z0-9]$', "${email} does not appear to be a valid email address")
@@ -111,12 +118,7 @@ define letsencrypt::cert
     $file_ensure      = $ensure
   }
 
-  exec
-  { "::letsencrypt::cert::${servername}":
-    command => $_letsencrypt_sh_command,
-    creates => [ $_cert_path, $_chain_path, $_fullchain_path, $_privkey_path ],
-  }
-
+  # Create the directory where the certificates will be stored.
   file
   { $_letsencrypt_dir:
     ensure  => $directory_ensure,
@@ -125,12 +127,47 @@ define letsencrypt::cert
     mode    => $letsencrypt_dir_mode,
   }
 
+  # Generate the private key, certificate and CSR.
+  ::letsencrypt::cert::csr
+  { $servername:
+    email        => $email,
+    cert_cnf_dir => $_letsencrypt_dir,
+    csr_path     => $_csr_path,
+    cert_path    => $_cert_path,
+    privkey_path => $_privkey_path,
+  }
+
+  file
+  { $_csr_path:
+    ensure  => $file_ensure,
+    owner   => $_csr_owner,
+    group   => $_csr_group,
+    mode    => $_csr_mode,
+  }
+
   file
   { $_cert_path:
     ensure  => $file_ensure,
     owner   => $_cert_owner,
     group   => $_cert_group,
     mode    => $_cert_mode,
+  }
+
+  file
+  { $_privkey_path:
+    ensure    => $file_ensure,
+    show_diff => false,
+    owner     => $_privkey_owner,
+    group     => $_privkey_group,
+    mode      => $_privkey_mode,
+  }
+
+  # Generate the chain and fullchain certificates, by asking the Let's Encrypt
+  # CA to sign our CSR.
+  exec
+  { "::letsencrypt::cert::${servername}":
+    command     => $_letsencrypt_sh_command,
+    refreshonly => true,
   }
 
   file
@@ -149,19 +186,16 @@ define letsencrypt::cert
     mode    => $_cert_mode,
   }
 
-  file
-  { $_privkey_path:
-    ensure    => $file_ensure,
-    show_diff => false,
-    owner     => $_privkey_owner,
-    group     => $_privkey_group,
-    mode      => $_privkey_mode,
-  }
+  File[$_letsencrypt_dir] -> ::Letsencrypt::Cert::Csr[$servername]
 
-  Exec["::letsencrypt::cert::${servername}"] -> File[$_cert_path]
+  ::Letsencrypt::Cert::Csr[$servername] -> File[$_csr_path]
+  ::Letsencrypt::Cert::Csr[$servername] -> File[$_cert_path]
+  ::Letsencrypt::Cert::Csr[$servername] -> File[$_privkey_path]
+
+  File[$_csr_path] ~> Exec["::letsencrypt::cert::${servername}"]
+
   Exec["::letsencrypt::cert::${servername}"] -> File[$_chain_path]
   Exec["::letsencrypt::cert::${servername}"] -> File[$_fullchain_path]
-  Exec["::letsencrypt::cert::${servername}"] -> File[$_privkey_path]
 
   if ($package_manage)
   {
