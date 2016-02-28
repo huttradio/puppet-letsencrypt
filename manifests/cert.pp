@@ -54,11 +54,26 @@ define letsencrypt::cert
   $directories_manage = true,
   $apache_manage      = true,
 
-  $letsencrypt_dir_base  = $::letsencrypt::params::letsencrypt_dir_base,
-  $letsencrypt_dir       = undef,
-  $letsencrypt_dir_owner = $::letsencrypt::params::letsencrypt_dir_owner,
-  $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
-  $letsencrypt_dir_mode  = $::letsencrypt::params::letsencrypt_dir_mode,
+  $environment         = undef,
+  $environment_staging = false,
+
+  $vhost_dir  = $::letsencrypt::params::vhost_dir,
+
+  $letsencrypt_dir_base = $::letsencrypt::params::letsencrypt_dir_base,
+
+  $letsencrypt_certs_dir_base = $::letsencrypt::params::letsencrypt_certs_dir_base,
+  $letsencrypt_csrs_dir_base  = $::letsencrypt::params::letsencrypt_csrs_dir_base,
+
+  $letsencrypt_certs_dir = undef,
+  $letsencrypt_csrs_dir  = undef,
+
+  $letsencrypt_certs_dir_owner = $::letsencrypt::params::letsencrypt_certs_dir_owner,
+  $letsencrypt_certs_dir_group = $::letsencrypt::params::letsencrypt_certs_dir_group,
+  $letsencrypt_certs_dir_mode  = $::letsencrypt::params::letsencrypt_certs_dir_mode,
+
+  $letsencrypt_csrs_dir_owner = $::letsencrypt::params::letsencrypt_csrs_dir_owner,
+  $letsencrypt_csrs_dir_group = $::letsencrypt::params::letsencrypt_csrs_dir_group,
+  $letsencrypt_csrs_dir_mode  = $::letsencrypt::params::letsencrypt_csrs_dir_mode,
 
   $letsencrypt_sh         = $::letsencrypt::params::letsencrypt_sh,
   $letsencrypt_sh_dir     = $::letsencrypt::params::letsencrypt_sh_dir,
@@ -76,32 +91,37 @@ define letsencrypt::cert
   $fullchain_path = undef,
   $privkey_path   = undef,
 
-  $csr_owner  = $::letsencrypt::params::letsencrypt_csr_owner,
-  $csr_group  = $::letsencrypt::params::letsencrypt_csr_group,
-  $csr_mode   = $::letsencrypt::params::letsencrypt_csr_mode,
-
   $cert_owner  = $::letsencrypt::params::letsencrypt_cert_owner,
   $cert_group  = $::letsencrypt::params::letsencrypt_cert_group,
   $cert_mode   = $::letsencrypt::params::letsencrypt_cert_mode,
 
-  $privkey_owner  = $::letsencrypt::params::letsencrypt_privkey_owner,
-  $privkey_group  = $::letsencrypt::params::letsencrypt_privkey_group,
-  $privkey_mode   = $::letsencrypt::params::letsencrypt_privkey_mode,
-
   $cron_manage  = true,
   $cron_command = undef,
   $cron_user    = undef,
+
+  $false = $::letsencrypt::params::false,
+  $test  = $::letsencrypt::params::test,
 )
 {
-  $_letsencrypt_dir = pick($letsencrypt_dir, "${letsencrypt_dir_base}/certs/${servername}")
+  $_letsencrypt_certs_dir = pick($letsencrypt_certs_dir, "${letsencrypt_certs_dir_base}/${servername}")
+  $_letsencrypt_csrs_dir  = pick($letsencrypt_csrs_dir, "${letsencrypt_csrs_dir_base}/${servername}")
 
-  $_csr_path       = pick($csr_path, "${_letsencrypt_dir}/${csr}")
-  $_cert_path      = pick($cert_path, "${_letsencrypt_dir}/${cert}")
-  $_chain_path     = pick($chain_path, "${_letsencrypt_dir}/${chain}")
-  $_fullchain_path = pick($fullchain_path, "${_letsencrypt_dir}/${fullchain}")
-  $_privkey_path   = pick($privkey_path, "${_letsencrypt_dir}/${privkey}")
+  $_csr_path       = pick($csr_path, "${_letsencrypt_csrs_dir}/${csr}")
+  $_cert_path      = pick($cert_path, "${_letsencrypt_certs_dir}/${cert}")
+  $_chain_path     = pick($chain_path, "${_letsencrypt_certs_dir}/${chain}")
+  $_fullchain_path = pick($fullchain_path, "${_letsencrypt_certs_dir}/${fullchain}")
+  $_privkey_path   = pick($privkey_path, "${_letsencrypt_certs_dir}/${privkey}")
 
-  $_letsencrypt_sh_command = pick($letsencrypt_sh_command, "${letsencrypt_sh_dir}/${letsencrypt_sh} ${_letsencrypt_dir} ${email} ${servername} ${csr_path}")
+  if ($environment_staging)
+  {
+    $_environment = pick($environment, $::letsencrypt::params::environment_staging)
+  }
+  else
+  {
+    $_environment = pick($environment, $::letsencrypt::params::environment_production)
+  }
+
+  $_letsencrypt_sh_command = pick($letsencrypt_sh_command, "'${letsencrypt_sh_dir}/${letsencrypt_sh}' '${_environment}' '${letsencrypt_dir_base}' '${vhost_dir}/.well-known/acme-challenge' '${email}' '${servername}' '${_csr_path}' '${_cert_path}' '${_chain_path}' '${_fullchain_path}'")
 
   validate_re($ensure, ['^present$', '^absent$'], 'ensure can only be one of present or absent')
   validate_re($email, '^[A-Za-z0-9][A-Za-z0-9_\.]*[A-Za-z0-9]@[A-Za-z0-9][0-9A-Za-z\-]*[A-Za-z0-9]\.[A-Za-z0-9][0-9A-Za-z\-\.]*[A-Za-z0-9]$', "${email} does not appear to be a valid email address")
@@ -110,105 +130,109 @@ define letsencrypt::cert
   if ($ensure == 'present')
   {
     $directory_ensure = 'directory'
-    $file_ensure      = 'file'
   }
   else
   {
     $directory_ensure = $ensure
-    $file_ensure      = $ensure
+  }
+
+  # Create the directory where the CSRs will be stored.
+  file
+  { $_letsencrypt_csrs_dir:
+    ensure => $directory_ensure,
+    owner  => $letsencrypt_csrs_dir_owner,
+    group  => $letsencrypt_csrs_dir_group,
+    mode   => $letsencrypt_csrs_dir_mode,
   }
 
   # Create the directory where the certificates will be stored.
   file
-  { $_letsencrypt_dir:
-    ensure  => $directory_ensure,
-    owner   => $letsencrypt_dir_owner,
-    group   => $letsencrypt_dir_group,
-    mode    => $letsencrypt_dir_mode,
+  { $_letsencrypt_certs_dir:
+    ensure => $directory_ensure,
+    owner  => $letsencrypt_certs_dir_owner,
+    group  => $letsencrypt_certs_dir_group,
+    mode   => $letsencrypt_certs_dir_mode,
   }
 
   # Generate the private key, certificate and CSR.
   ::letsencrypt::cert::csr
   { $servername:
-    email        => $email,
-    cert_cnf_dir => $_letsencrypt_dir,
-    csr_path     => $_csr_path,
-    cert_path    => $_cert_path,
-    privkey_path => $_privkey_path,
-  }
-
-  file
-  { $_csr_path:
-    ensure  => $file_ensure,
-    owner   => $_csr_owner,
-    group   => $_csr_group,
-    mode    => $_csr_mode,
-  }
-
-  file
-  { $_cert_path:
-    ensure  => $file_ensure,
-    owner   => $_cert_owner,
-    group   => $_cert_group,
-    mode    => $_cert_mode,
-  }
-
-  file
-  { $_privkey_path:
-    ensure    => $file_ensure,
-    show_diff => false,
-    owner     => $_privkey_owner,
-    group     => $_privkey_group,
-    mode      => $_privkey_mode,
+    email => $email,
+    dir   => $_letsencrypt_csrs_dir,
   }
 
   # Generate the chain and fullchain certificates, by asking the Let's Encrypt
   # CA to sign our CSR.
   exec
-  { "::letsencrypt::cert::${servername}":
-    command     => $_letsencrypt_sh_command,
-    refreshonly => true,
+  { "::letsencrypt::cert::create::${servername}":
+    command => $_letsencrypt_sh_command,
+    unless  => "${test} -f '$_cert_path' -a -f '$_chain_path' -a -f '$_fullchain_path'",
+  }
+
+  # Assertion to make sure that the certificate files were created.
+  exec
+  { "::letsencrypt::cert::assert::${servername}":
+    command => "${false}",
+    unless  => "${test} -f '$_cert_path' -a -f '$_chain_path' -a -f '$_fullchain_path'",
+  }
+
+  file
+  { $_cert_path:
+    ensure => $ensure,
+    owner  => $cert_owner,
+    group  => $cert_group,
+    mode   => $cert_mode,
   }
 
   file
   { $_chain_path:
-    ensure  => $file_ensure,
-    owner   => $_cert_owner,
-    group   => $_cert_group,
-    mode    => $_cert_mode,
+    ensure => $ensure,
+    owner  => $cert_owner,
+    group  => $cert_group,
+    mode   => $cert_mode,
   }
 
   file
   { $_fullchain_path:
-    ensure  => $file_ensure,
-    owner   => $_cert_owner,
-    group   => $_cert_group,
-    mode    => $_cert_mode,
+    ensure => $ensure,
+    owner  => $cert_owner,
+    group  => $cert_group,
+    mode   => $cert_mode,
   }
 
-  File[$_letsencrypt_dir] -> ::Letsencrypt::Cert::Csr[$servername]
+  file
+  { $_privkey_path:
+    ensure    => $ensure,
+    show_diff => false,
+    owner     => $privkey_owner,
+    group     => $privkey_group,
+    mode      => $privkey_mode,
+  }
 
-  ::Letsencrypt::Cert::Csr[$servername] -> File[$_csr_path]
-  ::Letsencrypt::Cert::Csr[$servername] -> File[$_cert_path]
-  ::Letsencrypt::Cert::Csr[$servername] -> File[$_privkey_path]
+  File[$_letsencrypt_csrs_dir] -> ::Letsencrypt::Cert::Csr[$servername]
 
-  File[$_csr_path] ~> Exec["::letsencrypt::cert::${servername}"]
+  File[$_letsencrypt_certs_dir]         -> Exec["::letsencrypt::cert::create::${servername}"]
+  ::Letsencrypt::Cert::Csr[$servername] ~> Exec["::letsencrypt::cert::create::${servername}"]
 
-  Exec["::letsencrypt::cert::${servername}"] -> File[$_chain_path]
-  Exec["::letsencrypt::cert::${servername}"] -> File[$_fullchain_path]
+  Exec["::letsencrypt::cert::create::${servername}"] -> Exec["::letsencrypt::cert::assert::${servername}"]
+
+  Exec["::letsencrypt::cert::assert::${servername}"] -> File[$_cert_path]
+  Exec["::letsencrypt::cert::assert::${servername}"] -> File[$_chain_path]
+  Exec["::letsencrypt::cert::assert::${servername}"] -> File[$_fullchain_path]
+  Exec["::letsencrypt::cert::assert::${servername}"] -> File[$_privkey_path]
 
   if ($package_manage)
   {
-    Class['::letsencrypt::package'] -> Exec["::letsencrypt::cert::${servername}"]
+    Class['::letsencrypt::package'] -> Exec["::letsencrypt::cert::create::${servername}"]
   }
 
   if ($directories_manage)
   {
-    Class['::letsencrypt::directories'] -> Exec["::letsencrypt::cert::${servername}"]
+    Class['::letsencrypt::directories'] -> Exec["::letsencrypt::cert::create::${servername}"]
   }
 
   if ($apache_manage)
   {
-    Class['::letsencrypt::apache'] -> Exec["::letsencrypt::cert::${servername}"]
+    Class['::letsencrypt::apache'] -> Exec["::letsencrypt::cert::create::${servername}"]
   }
 }

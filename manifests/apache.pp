@@ -54,13 +54,23 @@ class letsencrypt::apache
   $vhost      = $::letsencrypt::params::vhost,
   $vhost_port = $::letsencrypt::params::vhost_port,
 
-  $letsencrypt_dir_base  = $::letsencrypt::params::letsencrypt_dir_base,
-  $letsencrypt_dir_owner = $::letsencrypt::params::letsencrypt_dir_owner,
-  $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
-  $letsencrypt_dir_mode  = $::letsencrypt::params::letsencrypt_dir_mode,
+  $vhost_dir  = $::letsencrypt::params::vhost_dir,
+
+  $vhost_dir_owner = $::letsencrypt::params::vhost_dir_owner,
+  $vhost_dir_group = $::letsencrypt::params::vhost_dir_group,
+  $vhost_dir_mode  = $::letsencrypt::params::vhost_dir_mode,
 ) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
+
+  if ($ensure == 'present' or $ensure == 'latest')
+  {
+    $directory_ensure = 'directory'
+  }
+  else
+  {
+    $directory_ensure = $ensure
+  }
 
   if ($class_manage and $ensure == 'present' or $ensure == 'latest')
   {
@@ -72,41 +82,45 @@ class letsencrypt::apache
     contain ::apache
   }
 
-  if ($vhost_manage and $ensure == 'present' or $ensure == 'latest')
+  if ($vhost_manage)
   {
-    ::apache::vhost
-    { $vhost:
-      ip            => '*',
-      port          => $host_port,
+    if ($ensure == 'present' or $ensure == 'latest')
+    {
+      ::apache::vhost
+      { $vhost:
+        ip            => '*',
+        port          => $vhost_port,
 
-      docroot       => $letsencrypt_dir_base,
-      docroot_owner => $letsencrypt_dir_owner,
-      docroot_group => $letsencrypt_dir_group,
-      docroot_mode  => $letsencrypt_dir_mode,
+        docroot       => $vhost_dir,
+        docroot_owner => $vhost_dir_owner,
+        docroot_group => $vhost_dir_group,
+        docroot_mode  => $vhost_dir_mode,
 
-      directories   =>
-      [
-        {
-          path           => $letsencrypt_dir,
-          provider       => 'directory',
+        directories   =>
+        [
+          {
+            path           => "$vhost_dir/.well-known/acme-challenge",
+            provider       => 'directory',
 
-          allow_override => 'None',
-          require        => 'all denied',
-        },
-        {
-          path           => "${letsencrypt_dir}/.well-known/acme-challenge",
-          provider       => 'directory',
+            options        => ['FollowSymLinks'],
+            allow_override => 'None',
+            require        => 'all granted',
+          }
+        ],
+      }
 
-          options        => ['FollowSymLinks'],
-          allow_override => 'None',
-          require        => 'all granted',
-        }
-      ],
+      if ($directories_manage)
+      {
+        Class['::letsencrypt::directories'] -> ::Apache::Vhost[$vhost]
+      }
     }
 
-    if ($directories_manage)
-    {
-      Class['::letsencrypt::directories'] -> ::Apache::Vhost[$vhost]
+    file
+    { [$vhost_dir, "${vhost_dir}/.well-known", "${vhost_dir}/.well-known/acme-challenge"]:
+      ensure => $directory_ensure,
+      owner  => $vhost_dir_owner,
+      group  => $vhost_dir_group,
+      mode   => $vhost_dir_mode,
     }
   }
 }

@@ -4,15 +4,30 @@ dir="$(dirname $0)"
 config="${dir}/config.sh"
 letsconfig_sh="${dir}/letsencrypt.sh"
 
-basedir="${1}"
-email="${2}"
-domain="${3}"
-csr_path="${4}"
+########################
 
+ca="${1}"
+basedir="${2}"
+wellknown="${3}"
+
+email="${4}"
+domain="${5}"
+
+csr_path="${6}"
+
+########################
+
+# Save the letsencrypt.sh configuration file.
 cat > "${config}" << EOF
 CHALLENGETYPE="http-01"
+CA="${ca}"
 BASEDIR="${basedir}"
+WELLKNOWN="${wellknown}"
 CONTACT_EMAIL="${email}"
 EOF
 
-exec "${letsconfig_sh}" --config "${config}" --domain "${domain}" --signcsr "${csr_path}"
+# Sign the certificate signing request.
+"${letsconfig_sh}" --config "${config}" --domain "${domain}" --signcsr "${csr_path}" || exit $?
+
+# Generate the certificates.
+"${letsconfig_sh}" --config "${config}" --domain "${domain}" --cron || exit $?

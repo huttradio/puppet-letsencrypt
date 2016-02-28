@@ -45,30 +45,39 @@
 define letsencrypt::cert::csr
 (
   $email,
-  $cert_cnf_dir,
-  $cert_path,
-  $csr_path,
-  $privkey_path,
+  $dir,
 
   $ensure = 'present',
 
   $servername = $name,
 
-  $cert_cnf = $::letsencrupt::params::letsencrypt_cert_cnf,
+  $privkey  = $::letsencrypt::params::letsencrypt_privkey,
+  $cert_cnf = $::letsencrypt::params::letsencrypt_cert_cnf,
+  $csr      = $::letsencrypt::params::letsencrypt_csr,
 
+  $privkey_path  = undef,
   $cert_cnf_path = undef,
+  $csr_path      = undef,
 
-  $cert_cnf_source = $::letsencrypt::params::letsencrypt_cert_cnf_source,
-  $cert_cnf_owner  = $::letsencrypt::params::letsencrypt_cert_cnf_owner,
-  $cert_cnf_group  = $::letsencrypt::params::letsencrypt_cert_cnf_group,
-  $cert_cnf_mode   = $::letsencrypt::params::letsencrypt_cert_cnf_mode,
+  $privkey_owner = $::letsencrypt::params::letsencrypt_privkey_owner,
+  $privkey_group = $::letsencrypt::params::letsencrypt_privkey_group,
+  $privkey_mode  = $::letsencrypt::params::letsencrypt_privkey_mode,
 
-  $cron_manage  = true,
-  $cron_command = undef,
-  $cron_user    = undef,
+  $cert_cnf_owner = $::letsencrypt::params::letsencrypt_cert_cnf_owner,
+  $cert_cnf_group = $::letsencrypt::params::letsencrypt_cert_cnf_group,
+  $cert_cnf_mode  = $::letsencrypt::params::letsencrypt_cert_cnf_mode,
+
+  $csr_owner = $::letsencrypt::params::letsencrypt_csr_owner,
+  $csr_group = $::letsencrypt::params::letsencrypt_csr_group,
+  $csr_mode  = $::letsencrypt::params::letsencrypt_csr_mode,
+
+  $false = $::letsencrypt::params::false,
+  $test  = $::letsencrypt::params::test,
 )
 {
-  $_openssl_cert_cnf_path = pick($openssl_cert_cnf_path, "${letsencrypt_dir}/cert.cnf")
+  $_privkey_path  = pick($privkey_path, "${dir}/${privkey}")
+  $_cert_cnf_path = pick($cert_cnf_path, "${dir}/${cert_cnf}")
+  $_csr_path      = pick($csr_path, "${dir}/${csr}")
 
   if ($ensure == 'present')
   {
@@ -79,35 +88,66 @@ define letsencrypt::cert::csr
     $file_ensure = $ensure
   }
 
-  # Certificate, CSR and private key.
+  validate_re($ensure, ['^present$', '^absent$'], 'ensure can only be one of present or absent')
+
+  # Generate private key.
   ssl_pkey
-  { $privkey_path:
+  { $_privkey_path:
     ensure => $ensure,
   }
 
-  x509_cert
-  { $cert_path:
-    ensure => $ensure,
+  exec
+  { "::letsencrypt::cert::csr::assert::ssl_pkey::${servername}":
+    command => "${false}",
+    unless  => "${test} -f '$_privkey_path'",
   }
 
-  x509_request
-  { $csr_path:
-    ensure      => $ensure,
-    commonname  => $servername,
-    template    => $_openssl_cert_cnf_path,
-    private_key => $privkey_path,
-  }
-
-  # Manage files in Puppet.
   file
-  { $_openssl_cert_cnf_path:
-    ensure => $file_ensure,
-    source => $openssl_cert_cnf_source,
-    owner  => $openssl_cert_cnf_owner,
-    group  => $openssl_cert_cnf_group,
-    mode   => $openssl_cert_cnf_mode,
+  { $_privkey_path:
+    ensure    => $file_ensure,
+    show_diff => false,
+    owner     => $privkey_owner,
+    group     => $privkey_group,
+    mode      => $privkey_mode,
   }
 
-  File["${letsencrypt_dir}/cert.cnf"] -> X509_request[$csr_path]
-  Sssl_pkay[$privkey_path] ~> X509_cert[$cert_path] ~> X509_request[$csr_path]
+  # Generate OpenSSL configuration for CSR.
+  file
+  { $_cert_cnf_path:
+    ensure  => $file_ensure,
+    content => template('letsencrypt/cert.cnf.erb'),
+    owner   => $cert_cnf_owner,
+    group   => $cert_cnf_group,
+    mode    => $cert_cnf_mode,
+  }
+
+  # Generate CSR.
+  x509_request
+  { $_csr_path:
+    ensure      => $ensure,
+    template    => $_cert_cnf_path,
+    private_key => $_privkey_path,
+    force       => true,
+  }
+
+  exec
+  { "::letsencrypt::cert::csr::assert::x509_request::${servername}":
+    command => "${false}",
+    unless  => "${test} -f '$_csr_path'",
+  }
+
+  file
+  { $_csr_path:
+    ensure => $file_ensure,
+    owner  => $csr_owner,
+    group  => $csr_group,
+    mode   => $csr_mode,
+  }
+
+  Ssl_pkey[$_privkey_path] -> Exec["::letsencrypt::cert::csr::assert::ssl_pkey::${servername}"] -> File[$_privkey_path]
+
+  File[$_privkey_path]   -> X509_request[$_csr_path]
+  File[$_cert_cnf_path] -> X509_request[$_csr_path]
+
+  X509_request[$_csr_path] -> Exec["::letsencrypt::cert::csr::assert::x509_request::${servername}"] -> File[$_csr_path]
 }
