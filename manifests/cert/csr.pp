@@ -144,7 +144,7 @@ define letsencrypt::cert::csr
 
   Ssl_pkey[$_letsencrypt_privkey_path] -> Exec["::letsencrypt::cert::csr::assert::ssl_pkey::${servername}"] -> File[$_letsencrypt_privkey_path]
 
-  File[$_letsencrypt_privkey_path]   > X509_request[$_letsencrypt_csr_path]
+  File[$_letsencrypt_privkey_path]  -> X509_request[$_letsencrypt_csr_path]
   File[$_letsencrypt_cert_cnf_path] -> X509_request[$_letsencrypt_csr_path]
 
   X509_request[$_letsencrypt_csr_path] -> Exec["::letsencrypt::cert::csr::assert::x509_request::${servername}"] -> File[$_letsencrypt_csr_path]

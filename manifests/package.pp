@@ -59,7 +59,7 @@ class letsencrypt::package
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
 
   vcsrepo
-  { $letsencrypt_sh_dir:
+  { $package_dir:
     ensure   => $ensure,
     provider => $provider,
     source   => $source,

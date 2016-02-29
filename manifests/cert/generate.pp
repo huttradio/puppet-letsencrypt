@@ -193,7 +193,7 @@ define letsencrypt::cert::generate
   }
 
   file
-  { $_letsencrypt_rivkey_path:
+  { $_letsencrypt_privkey_path:
     ensure    => $ensure,
     show_diff => false,
     owner     => $letsencrypt_privkey_owner,
@@ -201,8 +201,8 @@ define letsencrypt::cert::generate
     mode      => $letsencrypt_privkey_mode,
   }
 
-  File[$_letsencrypt_certs_dir]   -> Exec["::letsencrypt::cert::create::${servername}"]
-  File[$_letsencrypt_script_path] -> Exec["::letsencrypt::cert::create::${servername}"]
+  File[$_letsencrypt_certs_dir]   -> Exec["::letsencrypt::cert::generate::create::${servername}"]
+  File[$_letsencrypt_script_path] -> Exec["::letsencrypt::cert::generate::create::${servername}"]
 
   Exec["::letsencrypt::cert::generate::create::${servername}"] -> Exec["::letsencrypt::cert::generate::assert::${servername}"]
 
