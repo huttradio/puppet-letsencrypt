@@ -56,6 +56,12 @@ define letsencrypt::cert::generate
   # Can be 'present' or 'absent'.
   $ensure = 'present',
 
+  # Used for generating the location for letsencrypt.sh.
+  $package_dir = $::letsencrypt::params::package_dir,
+
+  $package_path = undef,
+  $package = $::letsencrypt::params::package,
+
   # Used for generating acme_challenge_dir.
   $vhost_dir = $::letsencrypt::params::vhost_dir,
 
@@ -106,6 +112,8 @@ define letsencrypt::cert::generate
 {
   $_letsencrypt_scripts_dir = pick($letsencrypt_scripts_dir, "${letsencrypt_scripts_dir_base}/${servername}")
   $_letsencrypt_script_path = pick($letsencrypt_script_path, "${_letsencrypt_scripts_dir}/${letsencrypt_script}")
+
+  $_package_path = pick($package_path, "${package_dir}/${package}")
 
   $_acme_challenge_dir = pick($acme_challenge_dir, "${vhost_dir}/.well-known/acme-challenge")
 

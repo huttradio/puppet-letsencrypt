@@ -1,9 +1,10 @@
 #!/bin/sh
 
-config_sh="$(basename $0)"
-letsconfig_sh='<%= @_letsconfig_script_path %>'
+config="$(mktemp)"
 
 ########################
+
+letsencrypt_sh='<%= @_package_path %>'
 
 ca='<%= @environment %>'
 basedir='<%= @letsencrypt_dir_base %>'
@@ -16,8 +17,8 @@ csr='<%= @letsencrypt_csr_path %>'
 
 ########################
 
-# Sign the certificate signing request.
-cat > "${config_sh}" << EOF
+# Generate the letsencrypt.sh configuration.
+cat > "${config}" << EOF
 CHALLENGETYPE="http-01"
 CA="${ca}"
 BASEDIR="${basedir}"
@@ -25,8 +26,11 @@ WELLKNOWN="${wellknown}"
 CONTACT_EMAIL="${email}"
 EOF
 
-"${letsconfig_sh}" --config "${config_sh}" --domain "${domain}" --signcsr "${csr}" || exit $?
-rm -f "${config_sh}"
+# Sign the certificate signing request.
+"${letsencrypt_sh}" --config "${config}" --domain "${domain}" --signcsr "${csr}" || exit $?
 
 # Generate the certificates.
-"${letsconfig_sh}" --config "${config_sh}" --domain "${domain}" --cron || exit $?
+"${letsencrypt_sh}" --config "${config}" --domain "${domain}" --cron || exit $?
+
+# Clean up the letsencrypt.sh configuration.
+rm -f "${config}"

@@ -57,14 +57,7 @@ class letsencrypt::params
   $package_dir_owner  = 'root'
   $package_dir_group  = 'root'
 
-  # Virtual host configuration options.
-  $vhost      = $::fqdn
-  $vhost_port = '8133'
-
-  $vhost_dir       = "${letsencrypt_dir_base}/vhost"
-  $vhost_dir_owner = 'root'
-  $vhost_dir_group = 'root'
-  $vhost_dir_mode  = '0555'
+  $package = 'letsencrypt.sh'
 
   # Base directory locations and permissions.
   $letsencrypt_dir_base  = '/etc/letsencrypt'
@@ -120,4 +113,13 @@ class letsencrypt::params
   # Let's Encrypt environment locations.
   $environment_staging    = 'https://acme-staging.api.letsencrypt.org/directory'
   $environment_production = 'https://acme-v01.api.letsencrypt.org/directory'
+
+  # Virtual host configuration options.
+  $vhost      = $::fqdn
+  $vhost_port = '8133'
+
+  $vhost_dir       = "${letsencrypt_dir_base}/vhost"
+  $vhost_dir_owner = 'root'
+  $vhost_dir_group = 'root'
+  $vhost_dir_mode  = '0555'
 }
