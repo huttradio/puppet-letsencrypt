@@ -46,26 +46,30 @@ class letsencrypt::directories
 (
   $ensure = 'present',
 
-  $letsencrypt_dir_base        = $::letsencrypt::params::letsencrypt_dir_base,
-  $letsencrypt_csrs_dir_base  = $::letsencrypt::params::letsencrypt_csrs_dir_base,
-  $letsencrypt_certs_dir_base  = $::letsencrypt::params::letsencrypt_certs_dir_base,
-
+  $letsencrypt_dir_base  = $::letsencrypt::params::letsencrypt_dir_base,
   $letsencrypt_dir_owner = $::letsencrypt::params::letsencrypt_dir_owner,
   $letsencrypt_dir_group = $::letsencrypt::params::letsencrypt_dir_group,
   $letsencrypt_dir_mode  = $::letsencrypt::params::letsencrypt_dir_mode,
 
+  $letsencrypt_csrs_dir_base  = $::letsencrypt::params::letsencrypt_csrs_dir_base,
   $letsencrypt_csrs_dir_owner = $::letsencrypt::params::letsencrypt_csrs_dir_owner,
   $letsencrypt_csrs_dir_group = $::letsencrypt::params::letsencrypt_csrs_dir_group,
   $letsencrypt_csrs_dir_mode  = $::letsencrypt::params::letsencrypt_csrs_dir_mode,
 
+  $letsencrypt_certs_dir_base  = $::letsencrypt::params::letsencrypt_certs_dir_base,
   $letsencrypt_certs_dir_owner = $::letsencrypt::params::letsencrypt_certs_dir_owner,
   $letsencrypt_certs_dir_group = $::letsencrypt::params::letsencrypt_certs_dir_group,
   $letsencrypt_certs_dir_mode  = $::letsencrypt::params::letsencrypt_certs_dir_mode,
+
+  $letsencrypt_scripts_dir_base  = $::letsencrypt::params::letsencrypt_scripts_dir_base,
+  $letsencrypt_scripts_dir_owner = $::letsencrypt::params::letsencrypt_scripts_dir_owner,
+  $letsencrypt_scripts_dir_group = $::letsencrypt::params::letsencrypt_scripts_dir_group,
+  $letsencrypt_scripts_dir_mode  = $::letsencrypt::params::letsencrypt_scripts_dir_mode,
 ) inherits letsencrypt::params
 {
-  validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
+  validate_re($ensure, ['^present$', '^absent$'], 'ensure can only be one of present or absent')
 
-  if ($ensure == 'present' or $ensure == 'latest')
+  if ($ensure == 'present')
   {
     $directory_ensure = 'directory'
   }
@@ -96,5 +100,13 @@ class letsencrypt::directories
     owner  => $letsencrypt_certs_dir_owner,
     group  => $letsencrypt_certs_dir_group,
     mode   => $letsencrypt_certs_dir_mode,
+  }
+
+  file
+  { $letsencrypt_scripts_dir_base:
+    ensure => $directory_ensure,
+    owner  => $letsencrypt_scripts_dir_owner,
+    group  => $letsencrypt_scripts_dir_group,
+    mode   => $letsencrypt_scripts_dir_mode,
   }
 }

@@ -46,45 +46,25 @@ class letsencrypt::package
 (
   $ensure = 'present',
 
-  $letsencrypt_sh        = $::letsencrypt::params::letsencrypt_sh,
-  $letsencrypt_sh_dir    = $::letsencrypt::params::letsencrypt_sh_dir,
-  $letsencrypt_sh_source = $::letsencrypt::params::letsencrypt_sh_source,
-  $letsencrypt_sh_owner  = $::letsencrypt::params::letsencrypt_sh_owner,
-  $letsencrypt_sh_group  = $::letsencrypt::params::letsencrypt_sh_group,
-  $letsencrypt_sh_mode   = $::letsencrypt::params::letsencrypt_sh_mode,
+  $provider = $::letsencrypt::params::package_provider,
+  $source   = $::letsencrypt::params::package_source,
+  $revision = $::letsencrypt::params::package_revision,
 
-  $repo_provider  = $::letsencrypt::params::package_repo_provider,
-  $repo_source    = $::letsencrypt::params::package_repo_source,
-  $repo_revision  = $::letsencrypt::params::package_repo_revision,
+  $dir   = $::letsencrypt::params::package_dir,
+  $owner = $::letsencrypt::params::package_owner,
+  $group = $::letsencrypt::params::package_group,
+
 ) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
 
-  if ($ensure == 'present' or $ensure == 'latest')
-  {
-    $file_ensure = 'file'
-  }
-  else
-  {
-    $file_ensure = $ensure
-  }
-
   vcsrepo
   { $letsencrypt_sh_dir:
     ensure   => $ensure,
-    provider => $repo_provider,
-    source   => $repo_source,
-    revision => $repo_revision,
-    owner    => $letsencrypt_sh_owner,
-    group    => $letsencrypt_sh_group,
-  }
-
-  file
-  { "${letsencrypt_sh_dir}/${letsencrypt_sh}":
-    ensure => $file_ensure,
-    source => $letsencrypt_sh_source,
-    owner  => $letsencrypt_sh_owner,
-    group  => $letsencrypt_sh_group,
-    mode   => $letsencrypt_sh_mode,
+    provider => $provider,
+    source   => $source,
+    revision => $revision,
+    owner    => $owner,
+    group    => $group,
   }
 }

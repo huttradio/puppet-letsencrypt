@@ -46,21 +46,34 @@ class letsencrypt
 (
   $ensure = 'present',
 
-  $package_manage      = true,
-  $directories_manage  = true,
+  $package_manage = true,
+
+  $directories_manage = true,
+
+  $vhost      = $::letsencrypt::params::vhost,
+  $vhost_port = $::letsencrypt::params::vhost_port,
+
   $apache_manage       = true,
   $apache_class_manage = true,
   $apache_vhost_manage = true,
 
+  # TODO: nginx_manage
+
   $email   = undef,
   $domains = undef,
-
-  $vhost      = $::letsencrypt::params::vhost,
-  $vhost_port = $::letsencrypt::params::vhost_port,
 ) inherits letsencrypt::params
 {
   validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
   validate_bool($package_manage, $directories_manage, $apache_manage, $apache_class_manage, $apache_vhost_manage)
+
+  if ($ensure == 'latest')
+  {
+    $present_ensure = 'present'
+  }
+  else
+  {
+    $present_ensure = $ensure
+  }
 
   if ($package_manage)
   {
@@ -74,7 +87,7 @@ class letsencrypt
   {
     class
     { '::letsencrypt::directories':
-        ensure => $ensure,
+        ensure => $present_ensure,
     }
   }
 
@@ -82,7 +95,7 @@ class letsencrypt
   {
     class
     { '::letsencrypt::apache':
-      ensure             => $ensure,
+      ensure             => $present_ensure,
       class_manage       => $apache_class_manage,
       vhost_manage       => $apache_vhost_manage,
 
@@ -91,8 +104,6 @@ class letsencrypt
 
       directories_manage => $directories_manage,
     }
-
-
   }
 
   if ($domains != undef)
@@ -104,6 +115,7 @@ class letsencrypt
 
     ::letsencrypt::cert
     { $domains:
+      ensure             => $present_ensure,
       email              => $email,
 
       package_manage     => $package_manage,

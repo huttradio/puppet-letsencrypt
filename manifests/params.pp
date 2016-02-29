@@ -49,75 +49,13 @@ class letsencrypt::params
   $test  = '/usr/bin/test'
 
   # Package configuration options.
-  $package_repo_provider = 'git'
-  $package_repo_source   = 'https://github.com/lukas2511/letsencrypt.sh.git'
-  $package_repo_revision = 'master'
+  $package_provider = 'git'
+  $package_source   = 'https://github.com/lukas2511/letsencrypt.sh.git'
+  $package_revision = 'master'
 
-  # Let's Encrypt environment locations.
-  $environment_staging    = 'https://acme-staging.api.letsencrypt.org/directory'
-  $environment_production = 'https://acme-v01.api.letsencrypt.org/directory'
-
-  # Cron configuration options.
-  $cron_user = 'root'
-
-  # Let's Encrypt configuration options.
-  $letsencrypt_dir_base  = '/etc/letsencrypt'
-  $letsencrypt_dir_owner = 'root'
-  $letsencrypt_dir_group = $apache_group
-  $letsencrypt_dir_mode  = '0555'
-
-  $letsencrypt_csrs_dir_base  = "${letsencrypt_dir_base}/csrs"
-  $letsencrypt_csrs_dir_owner = 'root'
-  $letsencrypt_csrs_dir_group = 'root'
-  $letsencrypt_csrs_dir_mode  = '0550'
-
-  $letsencrypt_certs_dir_base  = "${letsencrypt_dir_base}/certs"
-  $letsencrypt_certs_dir_owner = 'root'
-  $letsencrypt_certs_dir_group = $apache_group
-  $letsencrypt_certs_dir_mode  = '0550'
-
-  $letsencrypt_sh        = 'letsencrypt-sh'
-  $letsencrypt_sh_dir    = '/opt/letsencrypt'
-  $letsencrypt_sh_source = 'puppet:///modules/letsencrypt/letsencrypt-sh'
-  $letsencrypt_sh_owner  = 'root'
-  $letsencrypt_sh_group  = 'root'
-  $letsencrypt_sh_mode   = '0555'
-
-  $letsencrypt_cert_cnf  = 'cert.cnf'
-  $letsencrypt_csr       = 'cert.csr'
-  $letsencrypt_cert      = 'cert.pem'
-  $letsencrypt_chain     = 'chain.pem'
-  $letsencrypt_fullchain = 'fullchain.pem'
-  $letsencrypt_privkey   = 'privkey.pem'
-
-  $letsencrypt_cert_cnf_owner = 'root'
-  $letsencrypt_cert_cnf_group = 'root'
-  $letsencrypt_cert_cnf_mode  = '0444'
-
-  $letsencrypt_csr_dir_owner = 'root'
-  $letsencrypt_csr_dir_group = 'root'
-  $letsencrypt_csr_dir_mode  = '0555'
-
-  $letsencrypt_cert_dir_owner = 'root'
-  $letsencrypt_cert_dir_group = 'root'
-  $letsencrypt_cert_dir_mode  = '0555'
-
-  $letsencrypt_cert_owner = 'root'
-  $letsencrypt_cert_group = 'root'
-  $letsencrypt_cert_mode  = '0444'
-
-  $letsencrypt_privkey_owner = 'root'
-  $letsencrypt_privkey_group = 'root'
-  $letsencrypt_privkey_mode  = '0400'
-
-  # Virtual host configuration options.
-  $vhost      = $::fqdn
-  $vhost_port = '8133'
-
-  $vhost_dir       = "${letsencrypt_dir_base}/vhost"
-  $vhost_dir_owner = 'root'
-  $vhost_dir_group = 'root'
-  $vhost_dir_mode  = '0555'
+  $package_dir        = '/opt/letsencrypt'
+  $package_dir_owner  = 'root'
+  $package_dir_group  = 'root'
 
   # Apache configuration options.
   if ($::osfamily == 'RedHat' or $::operatingsystem =~ /^[Aa]mazon$/)
@@ -140,4 +78,72 @@ class letsencrypt::params
   {
     $apache_group = 'wwwrun'
   }
+
+  # Cron configuration options.
+  $cron_user = 'root'
+
+  # Base directory locations and permissions.
+  $letsencrypt_dir_base  = '/etc/letsencrypt'
+  $letsencrypt_dir_owner = 'root'
+  $letsencrypt_dir_group = $apache_group
+  $letsencrypt_dir_mode  = '0555'
+
+  $letsencrypt_csrs_dir_base  = "${letsencrypt_dir_base}/csrs"
+  $letsencrypt_csrs_dir_owner = 'root'
+  $letsencrypt_csrs_dir_group = 'root'
+  $letsencrypt_csrs_dir_mode  = '0550'
+
+  $letsencrypt_certs_dir_base  = "${letsencrypt_dir_base}/certs"
+  $letsencrypt_certs_dir_owner = 'root'
+  $letsencrypt_certs_dir_group = $apache_group
+  $letsencrypt_certs_dir_mode  = '0550'
+
+  $letsencrypt_scripts_dir_base   = "${letsencrypt_dir_base}/scripts"
+  $letsencrypt_scripts_dir_owner  = 'root'
+  $letsencrypt_scripts_dir_group  = 'root'
+  $letsencrypt_scripts_dir_mode   = '0555'
+
+  # letsencrypt.sh wrapper script.
+  $letsencrypt_script          = 'letsencrypt-sh'
+  $letsencrypt_script_template = 'letsencrypt/letsencrypt-sh.erb'
+  $letsencrypt_script_owner    = 'root'
+  $letsencrypt_script_group    = 'root'
+  $letsencrypt_script_mode     = '0555'
+
+  # Certificates and key file names and permissions.
+  $letsencrypt_cert_cnf       = 'cert.cnf'
+  $letsencrypt_cert_cnf_owner = 'root'
+  $letsencrypt_cert_cnf_group = 'root'
+  $letsencrypt_cert_cnf_mode  = '0444'
+
+  $letsencrypt_csr       = 'cert.csr'
+  $letsencrypt_csr_owner = 'root'
+  $letsencrypt_csr_group = 'root'
+  $letsencrypt_csr_mode  = '0444'
+
+  $letsencrypt_cert       = 'cert.pem'
+  $letsencrypt_chain      = 'chain.pem'
+  $letsencrypt_fullchain  = 'fullchain.pem'
+  $letsencrypt_cert_owner = 'root'
+  $letsencrypt_cert_group = 'root'
+  $letsencrypt_cert_mode  = '0444'
+
+  $letsencrypt_privkey       = 'privkey.pem'
+  $letsencrypt_privkey_owner = 'root'
+  $letsencrypt_privkey_group = 'root'
+  $letsencrypt_privkey_mode  = '0400'
+
+  # Virtual host configuration options.
+  $vhost      = $::fqdn
+  $vhost_port = '8133'
+
+  $vhost_dir       = "${letsencrypt_dir_base}/vhost"
+  $vhost_dir_owner = 'root'
+  $vhost_dir_group = 'root'
+  $vhost_dir_mode  = '0555'
+
+  # Let's Encrypt environment locations.
+  $environment_staging    = 'https://acme-staging.api.letsencrypt.org/directory'
+  $environment_production = 'https://acme-v01.api.letsencrypt.org/directory'
+
 }

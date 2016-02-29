@@ -54,16 +54,15 @@ class letsencrypt::apache
   $vhost      = $::letsencrypt::params::vhost,
   $vhost_port = $::letsencrypt::params::vhost_port,
 
-  $vhost_dir  = $::letsencrypt::params::vhost_dir,
-
+  $vhost_dir       = $::letsencrypt::params::vhost_dir,
   $vhost_dir_owner = $::letsencrypt::params::vhost_dir_owner,
   $vhost_dir_group = $::letsencrypt::params::vhost_dir_group,
   $vhost_dir_mode  = $::letsencrypt::params::vhost_dir_mode,
 ) inherits letsencrypt::params
 {
-  validate_re($ensure, ['^present$', '^latest$', '^absent$'], 'ensure can only be one of present, latest or absent')
+  validate_re($ensure, ['^present$', '^absent$'], 'ensure can only be one of present or absent')
 
-  if ($ensure == 'present' or $ensure == 'latest')
+  if ($ensure == 'present')
   {
     $directory_ensure = 'directory'
   }
@@ -72,7 +71,7 @@ class letsencrypt::apache
     $directory_ensure = $ensure
   }
 
-  if ($class_manage and $ensure == 'present' or $ensure == 'latest')
+  if ($class_manage and $ensure == 'present')
   {
     class
     { '::apache':
@@ -84,7 +83,7 @@ class letsencrypt::apache
 
   if ($vhost_manage)
   {
-    if ($ensure == 'present' or $ensure == 'latest')
+    if ($ensure == 'present')
     {
       ::apache::vhost
       { $vhost:

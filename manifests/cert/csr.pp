@@ -51,33 +51,31 @@ define letsencrypt::cert::csr
 
   $servername = $name,
 
-  $privkey  = $::letsencrypt::params::letsencrypt_privkey,
-  $cert_cnf = $::letsencrypt::params::letsencrypt_cert_cnf,
-  $csr      = $::letsencrypt::params::letsencrypt_csr,
+  $letsencrypt_privkey_path  = undef,
+  $letsencrypt_privkey       = $::letsencrypt::params::letsencrypt_privkey,
+  $letsencrypt_privkey_owner = $::letsencrypt::params::letsencrypt_privkey_owner,
+  $letsencrypt_privkey_group = $::letsencrypt::params::letsencrypt_privkey_group,
+  $letsencrypt_privkey_mode  = $::letsencrypt::params::letsencrypt_privkey_mode,
 
-  $privkey_path  = undef,
-  $cert_cnf_path = undef,
-  $csr_path      = undef,
+  $letsencrypt_cert_cnf_path  = undef,
+  $letsencrypt_cert_cnf       = $::letsencrypt::params::letsencrypt_cert_cnf,
+  $letsencrypt_cert_cnf_owner = $::letsencrypt::params::letsencrypt_cert_cnf_owner,
+  $letsencrypt_cert_cnf_group = $::letsencrypt::params::letsencrypt_cert_cnf_group,
+  $letsencrypt_cert_cnf_mode  = $::letsencrypt::params::letsencrypt_cert_cnf_mode,
 
-  $privkey_owner = $::letsencrypt::params::letsencrypt_privkey_owner,
-  $privkey_group = $::letsencrypt::params::letsencrypt_privkey_group,
-  $privkey_mode  = $::letsencrypt::params::letsencrypt_privkey_mode,
-
-  $cert_cnf_owner = $::letsencrypt::params::letsencrypt_cert_cnf_owner,
-  $cert_cnf_group = $::letsencrypt::params::letsencrypt_cert_cnf_group,
-  $cert_cnf_mode  = $::letsencrypt::params::letsencrypt_cert_cnf_mode,
-
-  $csr_owner = $::letsencrypt::params::letsencrypt_csr_owner,
-  $csr_group = $::letsencrypt::params::letsencrypt_csr_group,
-  $csr_mode  = $::letsencrypt::params::letsencrypt_csr_mode,
+  $letsencrypt_csr_path  = undef,
+  $letsencrypt_csr       = $::letsencrypt::params::letsencrypt_csr,
+  $letsencrypt_csr_owner = $::letsencrypt::params::letsencrypt_csr_owner,
+  $letsencrypt_csr_group = $::letsencrypt::params::letsencrypt_csr_group,
+  $letsencrypt_csr_mode  = $::letsencrypt::params::letsencrypt_csr_mode,
 
   $false = $::letsencrypt::params::false,
   $test  = $::letsencrypt::params::test,
 )
 {
-  $_privkey_path  = pick($privkey_path, "${dir}/${privkey}")
-  $_cert_cnf_path = pick($cert_cnf_path, "${dir}/${cert_cnf}")
-  $_csr_path      = pick($csr_path, "${dir}/${csr}")
+  $_letsencrypt_privkey_path  = pick($letsencrypt_privkey_path, "${dir}/${letsencrypt_privkey}")
+  $_letsencrypt_cert_cnf_path = pick($letsencrypt_cert_cnf_path, "${dir}/${letsencrypt_cert_cnf}")
+  $_letsencrypt_csr_path      = pick($letsencrypt_csr_path, "${dir}/${letsencrypt_csr}")
 
   if ($ensure == 'present')
   {
@@ -92,62 +90,62 @@ define letsencrypt::cert::csr
 
   # Generate private key.
   ssl_pkey
-  { $_privkey_path:
+  { $_letsencrypt_privkey_path:
     ensure => $ensure,
   }
 
   exec
   { "::letsencrypt::cert::csr::assert::ssl_pkey::${servername}":
     command => "${false}",
-    unless  => "${test} -f '$_privkey_path'",
+    unless  => "${test} -f '${_letsencrypt_privkey_path}'",
   }
 
   file
-  { $_privkey_path:
+  { $_letsencrypt_privkey_path:
     ensure    => $file_ensure,
     show_diff => false,
-    owner     => $privkey_owner,
-    group     => $privkey_group,
-    mode      => $privkey_mode,
+    owner     => $letsencrypt_privkey_owner,
+    group     => $letsencrypt_privkey_group,
+    mode      => $letsencrypt_privkey_mode,
   }
 
   # Generate OpenSSL configuration for CSR.
   file
-  { $_cert_cnf_path:
+  { $_letsencrypt_cert_cnf_path:
     ensure  => $file_ensure,
     content => template('letsencrypt/cert.cnf.erb'),
-    owner   => $cert_cnf_owner,
-    group   => $cert_cnf_group,
-    mode    => $cert_cnf_mode,
+    owner   => $letsencrypt_cert_cnf_owner,
+    group   => $letsencrypt_cert_cnf_group,
+    mode    => $letsencrypt_cert_cnf_mode,
   }
 
   # Generate CSR.
   x509_request
-  { $_csr_path:
+  { $_letsencrypt_csr_path:
     ensure      => $ensure,
-    template    => $_cert_cnf_path,
-    private_key => $_privkey_path,
+    template    => $_letsencrypt_cert_cnf_path,
+    private_key => $_letsencrypt_privkey_path,
     force       => true,
   }
 
   exec
   { "::letsencrypt::cert::csr::assert::x509_request::${servername}":
     command => "${false}",
-    unless  => "${test} -f '$_csr_path'",
+    unless  => "${test} -f '${_letsencrypt_csr_path}'",
   }
 
   file
-  { $_csr_path:
+  { $_letsencrypt_csr_path:
     ensure => $file_ensure,
-    owner  => $csr_owner,
-    group  => $csr_group,
-    mode   => $csr_mode,
+    owner  => $letsencrypt_csr_owner,
+    group  => $letsencrypt_csr_group,
+    mode   => $letsencrypt_csr_mode,
   }
 
-  Ssl_pkey[$_privkey_path] -> Exec["::letsencrypt::cert::csr::assert::ssl_pkey::${servername}"] -> File[$_privkey_path]
+  Ssl_pkey[$_letsencrypt_privkey_path] -> Exec["::letsencrypt::cert::csr::assert::ssl_pkey::${servername}"] -> File[$_letsencrypt_privkey_path]
 
-  File[$_privkey_path]   -> X509_request[$_csr_path]
-  File[$_cert_cnf_path] -> X509_request[$_csr_path]
+  File[$_letsencrypt_privkey_path]   > X509_request[$_letsencrypt_csr_path]
+  File[$_letsencrypt_cert_cnf_path] -> X509_request[$_letsencrypt_csr_path]
 
-  X509_request[$_csr_path] -> Exec["::letsencrypt::cert::csr::assert::x509_request::${servername}"] -> File[$_csr_path]
+  X509_request[$_letsencrypt_csr_path] -> Exec["::letsencrypt::cert::csr::assert::x509_request::${servername}"] -> File[$_letsencrypt_csr_path]
 }

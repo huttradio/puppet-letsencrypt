@@ -1,0 +1,32 @@
+#!/bin/sh
+
+config_sh="$(basename $0)"
+letsconfig_sh='<%= @_letsconfig_script_path %>'
+
+########################
+
+ca='<%= @environment %>'
+basedir='<%= @letsencrypt_dir_base %>'
+wellknown='<%= @_acme_challenge_dir %>'
+
+email='<%= @email %>'
+domain='<%= @servername %>'
+
+csr='<%= @letsencrypt_csr_path %>'
+
+########################
+
+# Sign the certificate signing request.
+cat > "${config_sh}" << EOF
+CHALLENGETYPE="http-01"
+CA="${ca}"
+BASEDIR="${basedir}"
+WELLKNOWN="${wellknown}"
+CONTACT_EMAIL="${email}"
+EOF
+
+"${letsconfig_sh}" --config "${config_sh}" --domain "${domain}" --signcsr "${csr}" || exit $?
+rm -f "${config_sh}"
+
+# Generate the certificates.
+"${letsconfig_sh}" --config "${config_sh}" --domain "${domain}" --cron || exit $?
